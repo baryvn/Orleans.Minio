@@ -11,7 +11,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Test.AspNet.Client", "Test.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Orleans.Clustering.Minio", "src\Orleans.Clustering.Minio\Orleans.Clustering.Minio.csproj", "{A815EF9C-E53A-46C6-939B-4348179837D9}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Orleans.Persistence.Minio", "src\Orleans.Persistence.Minio\Orleans.Persistence.Minio.csproj", "{8A7269BA-D9FB-4015-B54D-B06C22596A90}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Orleans.Bary.Persistence.Minio", "src\Orleans.Persistence.Minio\Orleans.Bary.Persistence.Minio.csproj", "{8A7269BA-D9FB-4015-B54D-B06C22596A90}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Orleans.Reminders.Minio", "src\Orleans.Reminders.Minio\Orleans.Reminders.Minio.csproj", "{5A09751C-76E5-4DAC-AD66-1E8C15427ABF}"
 EndProject

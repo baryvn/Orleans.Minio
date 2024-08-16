@@ -3,14 +3,14 @@ using Minio;
 using Minio.DataModel;
 using Minio.DataModel.Args;
 using Orleans.Configuration;
-using Orleans.Persistence.Minio.Providers;
+using Orleans.Bary.Persistence.Minio.Providers;
 using Orleans.Runtime;
 using Orleans.Storage;
 using System.Security.AccessControl;
 using System.Text;
 using System.Text.Json;
 
-namespace Orleans.Persistence.Minio.Storage;
+namespace Orleans.Bary.Persistence.Minio.Storage;
 
 public class MinioGrainStorage : IGrainStorage, ILifecycleParticipant<ISiloLifecycle>
 {

@@ -2,13 +2,13 @@
 using Microsoft.Extensions.Options;
 using Minio;
 using Orleans.Hosting;
-using Orleans.Persistence.Minio.Providers;
-using Orleans.Persistence.Minio.Storage;
+using Orleans.Bary.Persistence.Minio.Providers;
+using Orleans.Bary.Persistence.Minio.Storage;
 using Orleans.Providers;
 using Orleans.Runtime.Hosting;
 using Orleans.Storage;
 
-namespace Orleans.Persistence.Minio.Hosting;
+namespace Orleans.Bary.Persistence.Minio.Hosting;
 
 public static class MinioSiloBuilderExtensions
 {

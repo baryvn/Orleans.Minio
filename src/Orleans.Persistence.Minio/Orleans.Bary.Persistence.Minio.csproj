@@ -11,7 +11,7 @@
 	</ItemGroup>
 
 	<PropertyGroup>
-		<PackageId>Orleans.Persistence.Minio</PackageId>
+		<PackageId>Orleans.Bary.Persistence.Minio</PackageId>
 		<Authors>BARRY</Authors>
 		<Title>Microsoft Orleans Persistence Service for Minio</Title>
 		<Description>Microsoft Orleans Persistence Service for Minio</Description>

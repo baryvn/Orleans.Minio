@@ -1,9 +1,9 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Orleans.Configuration.Overrides;
-using Orleans.Persistence.Minio.Providers;
+using Orleans.Bary.Persistence.Minio.Providers;
 
-namespace Orleans.Persistence.Minio.Storage;
+namespace Orleans.Bary.Persistence.Minio.Storage;
 
 public static class MinioGrainStorageFactory
 {

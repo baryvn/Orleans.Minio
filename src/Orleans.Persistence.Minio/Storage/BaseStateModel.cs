@@ -1,4 +1,4 @@
-﻿namespace Orleans.Persistence.Minio.Storage;
+﻿namespace Orleans.Bary.Persistence.Minio.Storage;
 
 internal class BaseStateModel<T>
 {

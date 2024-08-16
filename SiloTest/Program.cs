@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 using Orleans.Configuration;
 using Orleans.Reminders.Minio;
 using System.Net;
-using Orleans.Persistence.Minio.Hosting;
+using Orleans.Bary.Persistence.Minio.Hosting;
 
 IHostBuilder builder = Host.CreateDefaultBuilder(args)
     .UseOrleans(silo =>

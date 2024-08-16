@@ -1,6 +1,6 @@
 ﻿using Orleans.Storage;
 
-namespace Orleans.Persistence.Minio.Providers;
+namespace Orleans.Bary.Persistence.Minio.Providers;
 
 public class MinioGrainStorageOptions : IStorageProviderSerializerOptions
 {

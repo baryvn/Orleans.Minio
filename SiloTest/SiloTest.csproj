@@ -13,7 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\src\Orleans.Clustering.Minio\Orleans.Clustering.Minio.csproj" />
-    <ProjectReference Include="..\src\Orleans.Persistence.Minio\Orleans.Persistence.Minio.csproj" />
+    <ProjectReference Include="..\src\Orleans.Persistence.Minio\Orleans.Bary.Persistence.Minio.csproj" />
     <ProjectReference Include="..\src\Orleans.Reminders.Minio\Orleans.Reminders.Minio.csproj" />
     <ProjectReference Include="..\TestGrain\TestGrain.csproj" />
   </ItemGroup>
