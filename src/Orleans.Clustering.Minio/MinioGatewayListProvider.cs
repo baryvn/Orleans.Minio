@@ -46,24 +46,31 @@ namespace Orleans.Runtime.Membership
             bool found = await _minioClient.BucketExistsAsync(beArgs).ConfigureAwait(false);
             if (found)
             {
-                var listArgs = new ListObjectsArgs().WithBucket(ClusterId).WithPrefix("membership_").WithRecursive(false);
-                await foreach (var item in _minioClient.ListObjectsEnumAsync(listArgs).ConfigureAwait(false))
+                try
                 {
-                    await _minioClient.GetObjectAsync(
-                            new GetObjectArgs()
-                                .WithBucket(ClusterId)
-                                .WithObject(item.Key)
-                                .WithCallbackStream(async (stream) =>
-                                {
-                                    var member = await stream.ToObject<MembershipEntry>();
-                                    if (member != null && member.SiloAddress != null && member.Status == SiloStatus.Active && member.ProxyPort > 0)
+                    var listArgs = new ListObjectsArgs().WithBucket(ClusterId).WithPrefix("membership_").WithRecursive(false);
+                    await foreach (var item in _minioClient.ListObjectsEnumAsync(listArgs).ConfigureAwait(false))
+                    {
+                        await _minioClient.GetObjectAsync(
+                                new GetObjectArgs()
+                                    .WithBucket(ClusterId)
+                                    .WithObject(item.Key)
+                                    .WithCallbackStream(async (stream) =>
                                     {
-                                        member.SiloAddress.Endpoint.Port = member.ProxyPort;
-                                        dataRs.Add(member.SiloAddress.ToGatewayUri());
-                                    }
-                                })
-                        );
+                                        var member = await stream.ToObject<MembershipEntry>();
+                                        if (member != null && member.SiloAddress != null && member.Status == SiloStatus.Active && member.ProxyPort > 0)
+                                        {
+                                            member.SiloAddress.Endpoint.Port = member.ProxyPort;
+                                            dataRs.Add(member.SiloAddress.ToGatewayUri());
+                                        }
+                                    })
+                            );
+                    }
                 }
+                catch (Exception ex) {
+                    logger.LogError(ex.Message);
+                }
+
             }
             return dataRs;
         }

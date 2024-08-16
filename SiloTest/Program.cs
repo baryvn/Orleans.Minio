@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Orleans.Configuration;
-using Orleans.Reminders.Minio;
 using System.Net;
 using Orleans.Bary.Persistence.Minio.Hosting;
 

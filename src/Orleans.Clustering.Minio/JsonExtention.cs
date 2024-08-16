@@ -6,21 +6,31 @@ namespace Orleans.Clustering.Minio
     {
         public static async Task<T?> ToObject<T>(this Stream stream)
         {
-            if (stream == null || stream.CanRead == false)
+            try
             {
-                return default;
-            }
+                if (stream == null || stream.CanRead == false)
+                {
+                    return default;
+                }
 
-            return await JsonSerializer.DeserializeAsync<T>(stream);
+                return await JsonSerializer.DeserializeAsync<T>(stream);
+            }
+            catch { }
+            return default;
         }
         public static string ToJson(this object obj)
         {
-            if (obj == null)
+            try
             {
-                return string.Empty;
-            }
+                if (obj == null)
+                {
+                    return string.Empty;
+                }
 
-            return JsonSerializer.Serialize(obj);
+                return JsonSerializer.Serialize(obj);
+            }
+            catch { }
+            return string.Empty;
         }
     }
 }

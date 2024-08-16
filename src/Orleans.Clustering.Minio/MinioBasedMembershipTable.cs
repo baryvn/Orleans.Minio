@@ -266,7 +266,7 @@ namespace Orleans.Runtime.Membership
                     })
                 );
                 await _minioClient.GetObjectAsync(
-                    new GetObjectArgs().WithBucket(ClusterId).WithObject(entry.SiloAddress.ToString()).WithCallbackStream(async (stream) =>
+                    new GetObjectArgs().WithBucket(ClusterId).WithObject($"membership_{entry.SiloAddress.ToString()}").WithCallbackStream(async (stream) =>
                     {
                         var member = await stream.ToObject<MembershipEntry>();
                         if (member != null)
