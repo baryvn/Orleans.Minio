@@ -12,9 +12,6 @@ Nuget Packages are provided:
 - Orleans.Bary.Persistence.Minio
 - Orleans.Clustering.Minio
 - Orleans.Reminders.Minio
-
-## Coming soon
-- Orleans.Reminder.Minio
   
 ## Silo
 ```
