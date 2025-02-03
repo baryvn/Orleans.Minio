@@ -8,7 +8,8 @@ is a package that use Minio as a backend for Orleans providers like Cluster Memb
 
 # Installation 
 Nuget Packages are provided:
-- Orleans.Persistence.Minio
+- Orleans.Bary.Persistence.Minio.Core
+- Orleans.Bary.Persistence.Minio
 - Orleans.Clustering.Minio
 
 ## Coming soon
