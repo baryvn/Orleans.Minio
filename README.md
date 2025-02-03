@@ -19,24 +19,20 @@ Nuget Packages are provided:
 IHostBuilder builder = Host.CreateDefaultBuilder(args)
     .UseOrleans(silo =>
     {
+        silo.Services.AddMinio(configureClient => configureClient
+                                .WithEndpoint("s3.minio.nextcms.intemi.vn")
+                                .WithCredentials("V77bP7IJ48EQqAvBdeEW", "FUyioEZ5ZjHZjYq6YnGVfLNWhlhyZag9sSPJdBaS")
+                                .WithSSL(false)
+                                .Build());
+
         silo.Configure<ClusterOptions>(options =>
         {
             options.ClusterId = "DEV";
             options.ServiceId = "DEV";
 
         });
-        silo.UseMinioClustering(option =>
-        {
-          option.Endpoint = "s3.minio.example";
-          option.AccessKey = "access key";
-          option.SecretKey = "secret key";
-        });
-        silo.AddMinioGrainStorage("test", options =>
-        {
-          option.Endpoint = "s3.minio.example";
-          option.AccessKey = "access key";
-          option.SecretKey = "secret key";
-        });
+        silo.UseMinioClustering();
+        silo.AddMinioGrainStorage("test", options =>{});
         silo.ConfigureLogging(logging => logging.AddConsole());
 
         silo.ConfigureEndpoints(
@@ -63,18 +59,18 @@ await host.RunAsync();
 var builder = WebApplication.CreateBuilder(args);
 builder.Host.UseOrleansClient(client =>
 {
+    client.Services.AddMinio(configureClient => configureClient
+                            .WithEndpoint("s3.minio.nextcms.intemi.vn")
+                            .WithCredentials("V77bP7IJ48EQqAvBdeEW", "FUyioEZ5ZjHZjYq6YnGVfLNWhlhyZag9sSPJdBaS")
+                            .WithSSL(false)
+                            .Build());
     client.Configure<ClusterOptions>(options =>
     {
         options.ClusterId = "DEV";
         options.ServiceId = "DEV";
 
     });
-    client.UseMinioClustering(option =>
-    {
-        option.Endpoint = "s3.minio.example";
-        option.AccessKey = "access key";
-        option.SecretKey = "secret key";
-    });
+    client.UseMinioClustering( );
 });
 
 ```
