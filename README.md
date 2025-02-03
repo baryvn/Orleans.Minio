@@ -11,6 +11,7 @@ Nuget Packages are provided:
 - Orleans.Bary.Persistence.Minio.Core
 - Orleans.Bary.Persistence.Minio
 - Orleans.Clustering.Minio
+- Orleans.Reminders.Minio
 
 ## Coming soon
 - Orleans.Reminder.Minio
@@ -21,8 +22,8 @@ IHostBuilder builder = Host.CreateDefaultBuilder(args)
     .UseOrleans(silo =>
     {
         silo.Services.AddMinio(configureClient => configureClient
-                                .WithEndpoint("s3.minio.nextcms.intemi.vn")
-                                .WithCredentials("V77bP7IJ48EQqAvBdeEW", "FUyioEZ5ZjHZjYq6YnGVfLNWhlhyZag9sSPJdBaS")
+                                .WithEndpoint("enpoint")
+                                .WithCredentials("accesskey", "secretkey")
                                 .WithSSL(false)
                                 .Build());
 
@@ -34,6 +35,7 @@ IHostBuilder builder = Host.CreateDefaultBuilder(args)
         });
         silo.UseMinioClustering();
         silo.AddMinioGrainStorage("test", options =>{});
+        silo.UseMinioReminder();
         silo.ConfigureLogging(logging => logging.AddConsole());
 
         silo.ConfigureEndpoints(
@@ -61,8 +63,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Host.UseOrleansClient(client =>
 {
     client.Services.AddMinio(configureClient => configureClient
-                            .WithEndpoint("s3.minio.nextcms.intemi.vn")
-                            .WithCredentials("V77bP7IJ48EQqAvBdeEW", "FUyioEZ5ZjHZjYq6YnGVfLNWhlhyZag9sSPJdBaS")
+                            .WithEndpoint("enpoint")
+                            .WithCredentials("accesskey", "secretkey")
                             .WithSSL(false)
                             .Build());
     client.Configure<ClusterOptions>(options =>
