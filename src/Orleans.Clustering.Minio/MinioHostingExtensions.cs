@@ -21,24 +21,11 @@ namespace Orleans.Hosting
         /// <returns>
         /// The provided <see cref="ISiloBuilder"/>.
         /// </returns>
-        public static ISiloBuilder UseMinioClustering(
-            this ISiloBuilder builder,
-            Action<MinioClusteringSiloOptions> configureOptions)
+        public static ISiloBuilder UseMinioClustering(this ISiloBuilder builder)
         {
             return builder.ConfigureServices(
                 services =>
                 {
-                    if (configureOptions != null)
-                    {
-                        services.Configure(configureOptions);
-                        MinioClusteringSiloOptions option = new MinioClusteringSiloOptions { AccessKey = string.Empty, Endpoint = string.Empty, SecretKey = string.Empty, UseSSl = false };
-                        configureOptions.Invoke(option);
-                        services.AddMinio(configureClient => configureClient
-                                .WithEndpoint(option.Endpoint)
-                                .WithCredentials(option.AccessKey, option.SecretKey)
-                                .WithSSL(option.UseSSl)
-                                .Build());
-                    }
                     services.AddSingleton<IMembershipTable, MinioBasedMembershipTable>();
                 });
         }
@@ -56,24 +43,11 @@ namespace Orleans.Hosting
         /// <returns>
         /// The provided <see cref="IClientBuilder"/>.
         /// </returns>
-        public static IClientBuilder UseMinioClustering(
-            this IClientBuilder builder,
-            Action<MinioGatewayListProviderOptions> configureOptions)
+        public static IClientBuilder UseMinioClustering(this IClientBuilder builder)
         {
             return builder.ConfigureServices(
                 services =>
                 {
-                    if (configureOptions != null)
-                    {
-                        services.Configure(configureOptions);
-                        MinioGatewayListProviderOptions option = new MinioGatewayListProviderOptions { AccessKey = string.Empty, Endpoint = string.Empty, SecretKey = string.Empty, UseSSl = false };
-                        configureOptions.Invoke(option);
-                        services.AddMinio(configureClient => configureClient
-                                .WithEndpoint(option.Endpoint)
-                                .WithCredentials(option.AccessKey, option.SecretKey)
-                                .WithSSL(option.UseSSl)
-                                .Build());
-                    }
                     services.AddSingleton<IGatewayListProvider, MinioGatewayListProvider>();
                 });
         }

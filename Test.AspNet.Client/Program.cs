@@ -1,19 +1,20 @@
 using Orleans.Configuration;
+using Minio;
+
 var builder = WebApplication.CreateBuilder(args);
 builder.Host.UseOrleansClient(client =>
 {
+    client.Services.AddMinio(configureClient => configureClient
+                            .WithEndpoint("s3.minio.ifilemanager.intemi.vn")
+                            .WithCredentials("V77bP7IJ48EQqAvBdeEW", "FUyioEZ5ZjHZjYq6YnGVfLNWhlhyZag9sSPJdBaS")
+                            .WithSSL(false)
+                            .Build());
     client.Configure<ClusterOptions>(options =>
     {
-        options.ClusterId = "DEV";
-        options.ServiceId = "DEV";
-
+        options.ClusterId = "ORLEANS_TEST";
+        options.ServiceId = "ORLEANS_TEST";
     });
-    client.UseMinioClustering(option =>
-    {
-        option.Endpoint = "s3.minio.ecoit.vn";
-        option.AccessKey = "nnaaSlzudLuXWVsnNkif";
-        option.SecretKey = "tmfGzH5wz3ATfYJuxdfrFh8M9tOWNmiuBekPwKBk";
-    });
+    client.UseMinioClustering();
 });
 
 // Add services to the container.
@@ -32,5 +33,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapControllers();
+
 
 await app.RunAsync("http://192.168.68.41:11001");

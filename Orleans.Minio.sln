@@ -15,6 +15,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Orleans.Bary.Persistence.Mi
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Orleans.Reminders.Minio", "src\Orleans.Reminders.Minio\Orleans.Reminders.Minio.csproj", "{5A09751C-76E5-4DAC-AD66-1E8C15427ABF}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{1FA8F4C9-19EA-497B-82C4-0AD3FB08AF5A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orleans.Persistence.Minio.Core", "src\Orleans.Persistence.Minio.Core\Orleans.Persistence.Minio.Core.csproj", "{C3DBBC4F-4296-4852-8D3B-B3ADD055667E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,11 +49,18 @@ Global
 		{5A09751C-76E5-4DAC-AD66-1E8C15427ABF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5A09751C-76E5-4DAC-AD66-1E8C15427ABF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5A09751C-76E5-4DAC-AD66-1E8C15427ABF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C3DBBC4F-4296-4852-8D3B-B3ADD055667E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C3DBBC4F-4296-4852-8D3B-B3ADD055667E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C3DBBC4F-4296-4852-8D3B-B3ADD055667E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C3DBBC4F-4296-4852-8D3B-B3ADD055667E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {551F0E10-6D44-4043-8BC6-7DF3D7955485}
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{C3DBBC4F-4296-4852-8D3B-B3ADD055667E} = {1FA8F4C9-19EA-497B-82C4-0AD3FB08AF5A}
 	EndGlobalSection
 EndGlobal

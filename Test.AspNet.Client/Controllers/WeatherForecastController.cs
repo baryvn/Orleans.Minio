@@ -26,10 +26,8 @@ namespace Test.AspNet.Client.Controllers
         public async Task<IEnumerable<WeatherForecast>> Get(string name)
         {
             var g = _client.GetGrain<IHelloGrain>(Guid.NewGuid());
-            await g.AddItem(new TestModel
-            {
-                MYCOLUM = name,
-            });
+            await g.AddItem(new TestModel());
+            await g.RegisterRemider();
             var c = await g.GetCount();
 
             return Enumerable.Range(1, 5).Select(index => new WeatherForecast

@@ -1,12 +1,12 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using Minio;
 using Orleans.Hosting;
 using Orleans.Bary.Persistence.Minio.Providers;
 using Orleans.Bary.Persistence.Minio.Storage;
 using Orleans.Providers;
 using Orleans.Runtime.Hosting;
 using Orleans.Storage;
+using Microsoft.Extensions.Logging;
 
 namespace Orleans.Bary.Persistence.Minio.Hosting;
 
@@ -25,22 +25,8 @@ public static class MinioSiloBuilderExtensions
     public static IServiceCollection AddMinioGrainStorage(this IServiceCollection services, string providerName, Action<MinioGrainStorageOptions> options)
     {
         services.AddOptions<MinioGrainStorageOptions>(providerName).Configure(options);
-        MinioGrainStorageOptions option = new MinioGrainStorageOptions
-        {
-            AccessKey = string.Empty,
-            Endpoint = string.Empty,
-            SecretKey = string.Empty,
-            UseSSl = false,
-            GrainStorageSerializer = null
-        };
-        options.Invoke(option);
-        services.AddMinio(configureClient => configureClient
-                .WithEndpoint(option.Endpoint)
-                .WithCredentials(option.AccessKey, option.SecretKey)
-                .WithSSL(option.UseSSl)
-                .Build());
-
         services.AddTransient<IPostConfigureOptions<MinioGrainStorageOptions>, DefaultStorageProviderSerializerOptionsConfigurator<MinioGrainStorageOptions>>();
+        services.AddTransient(provider => provider.GetRequiredService<ILoggerFactory>().CreateLogger<MinioGrainStorage>());
         return services.AddGrainStorage(providerName, MinioGrainStorageFactory.Create);
     }
 }

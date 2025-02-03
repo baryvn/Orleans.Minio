@@ -4,12 +4,11 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
-
 	<PropertyGroup>
-		<PackageId>Orleans.Reminders.Minio</PackageId>
+		<PackageId>Orleans.Persistence.Minio.Core</PackageId>
 		<Authors>BARRY</Authors>
-		<Title>Microsoft Orleans Reminder Service for Minio</Title>
-		<Description>Microsoft Orleans Reminder Service for Minio</Description>
+		<Title>Microsoft Orleans Persistence Service for Minio</Title>
+		<Description>Microsoft Orleans Persistence Service for Minio</Description>
 		<PackageProjectUrl>https://github.com/baryvn/Orleans.Minio</PackageProjectUrl>
 		<PackageIconUrl>https://raw.githubusercontent.com/baryvn/Orleans.Minio/main/bary-favicon-color.png</PackageIconUrl>
 		<PackageTags>Orleans Cloud-Computing Actor-Model Actors Distributed-Systems Minio C# .NET</PackageTags>
@@ -22,11 +21,4 @@
 		<Version>9.1.0</Version>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 	</PropertyGroup>
-
-	<ItemGroup>
-		<PackageReference Include="Microsoft.Orleans.Reminders" Version="9.0.1" />
-		<PackageReference Include="Microsoft.Orleans.Runtime" Version="9.0.1" />
-		<PackageReference Include="Minio" Version="6.0.4" />
-	</ItemGroup>
-
 </Project>

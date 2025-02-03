@@ -1,6 +1,6 @@
 ﻿using System.Text.Json;
 
-namespace Orleans.Bary.Persistence.Minio
+namespace Orleans.Reminders.Minio
 {
     public static class JsonExtention
     {

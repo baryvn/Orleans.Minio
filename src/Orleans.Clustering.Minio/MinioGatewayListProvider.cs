@@ -5,13 +5,13 @@ using Orleans.Configuration;
 using Orleans.Clustering.Minio;
 using Minio;
 using Minio.DataModel.Args;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using Minio.Exceptions;
 
 namespace Orleans.Runtime.Membership
 {
     public class MinioGatewayListProvider : IGatewayListProvider
     {
-        private readonly ILogger logger;
+        private readonly ILogger _logger;
         private readonly string ClusterId;
         private readonly TimeSpan _maxStaleness;
         IMinioClient _minioClient;
@@ -23,8 +23,8 @@ namespace Orleans.Runtime.Membership
             IOptions<ClusterOptions> clusterOptions)
         {
             _minioClient = minioClient;
-            this.logger = logger;
-            ClusterId = clusterOptions.Value.ClusterId.ToLower().Replace("_","-");
+            this._logger = logger;
+            ClusterId = clusterOptions.Value.ClusterId.ToLower().Replace("_", "-");
             _maxStaleness = gatewayOptions.Value.GatewayListRefreshPeriod;
         }
 
@@ -33,6 +33,28 @@ namespace Orleans.Runtime.Membership
         /// </summary>
         public Task InitializeGatewayListProvider() => Task.CompletedTask;
 
+        private async Task<MembershipEntry?> GetMembershipEntry(string siloAddress)
+        {
+            MembershipEntry? entry = null;
+            try
+            {
+                var args = new GetObjectArgs().WithBucket(ClusterId).WithObject(siloAddress).WithCallbackStream(async (stream) =>
+                {
+                    entry = await stream.ToObject<MembershipEntry>();
+                });
+                await _minioClient.GetObjectAsync(args);
+            }
+            
+            catch (Exception ex)
+            {
+                var notfound = ex as ObjectNotFoundException;
+                if (notfound == null)
+                {
+                    _logger.LogError(ex, ex.Message);
+                }
+            }
+            return entry;
+        }
         /// <summary>
         /// Returns the list of gateways (silos) that can be used by a client to connect to Orleans cluster.
         /// The Uri is in the form of: "gwy.tcp://IP:port/Generation". See Utils.ToGatewayUri and Utils.ToSiloAddress for more details about Uri format.
@@ -51,24 +73,22 @@ namespace Orleans.Runtime.Membership
                     var listArgs = new ListObjectsArgs().WithBucket(ClusterId).WithPrefix("membership_").WithRecursive(false);
                     await foreach (var item in _minioClient.ListObjectsEnumAsync(listArgs).ConfigureAwait(false))
                     {
-                        await _minioClient.GetObjectAsync(
-                                new GetObjectArgs()
-                                    .WithBucket(ClusterId)
-                                    .WithObject(item.Key)
-                                    .WithCallbackStream(async (stream) =>
-                                    {
-                                        var member = await stream.ToObject<MembershipEntry>();
-                                        if (member != null && member.SiloAddress != null && member.Status == SiloStatus.Active && member.ProxyPort > 0)
-                                        {
-                                            member.SiloAddress.Endpoint.Port = member.ProxyPort;
-                                            dataRs.Add(member.SiloAddress.ToGatewayUri());
-                                        }
-                                    })
-                            );
+                        var member = await GetMembershipEntry(item.Key);
+                        if (member != null && member.SiloAddress != null && member.Status == SiloStatus.Active && member.ProxyPort > 0)
+                        {
+                            member.SiloAddress.Endpoint.Port = member.ProxyPort;
+                            dataRs.Add(member.SiloAddress.ToGatewayUri());
+                        }
                     }
                 }
-                catch (Exception ex) {
-                    logger.LogError(ex.Message);
+
+                catch (Exception ex)
+                {
+                    var notfound = ex as ObjectNotFoundException;
+                    if (notfound == null)
+                    {
+                        _logger.LogError(ex, ex.Message);
+                    }
                 }
 
             }

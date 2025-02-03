@@ -3,30 +3,31 @@ using Microsoft.Extensions.Logging;
 using Orleans.Configuration;
 using System.Net;
 using Orleans.Bary.Persistence.Minio.Hosting;
+using Minio;
+using Orleans.Reminders.Minio;
 
 IHostBuilder builder = Host.CreateDefaultBuilder(args)
-    .UseOrleans(silo =>
+    .UseOrleans(static silo =>
     {
+        silo.Services.AddMinio(configureClient => configureClient
+                                .WithEndpoint("s3.minio.ifilemanager.intemi.vn")
+                                .WithCredentials("V77bP7IJ48EQqAvBdeEW", "FUyioEZ5ZjHZjYq6YnGVfLNWhlhyZag9sSPJdBaS")
+                                .WithSSL(false)
+                                .Build());
+
         silo.Configure<ClusterOptions>(options =>
         {
-            options.ClusterId = "DEV";
-            options.ServiceId = "DEV";
+            options.ClusterId = "ORLEANS_TEST";
+            options.ServiceId = "ORLEANS_TEST";
 
         });
-        silo.UseMinioClustering(option =>
+        silo.UseMinioClustering();
+        silo.AddMinioGrainStorage("test", option =>
         {
-            option.Endpoint = "s3.minio.ecoit.vn";
-            option.AccessKey = "nnaaSlzudLuXWVsnNkif";
-            option.SecretKey = "tmfGzH5wz3ATfYJuxdfrFh8M9tOWNmiuBekPwKBk";
         });
-        silo.AddMinioGrainStorage("test", options =>
-        {
-            options.Endpoint = "s3.minio.ecoit.vn";
-            options.AccessKey = "nnaaSlzudLuXWVsnNkif";
-            options.SecretKey = "tmfGzH5wz3ATfYJuxdfrFh8M9tOWNmiuBekPwKBk";
-        });
+
+        silo.UseMinioReminder();
         silo.ConfigureLogging(logging => logging.AddConsole());
-
         silo.ConfigureEndpoints(
             siloPort: 11111,
             gatewayPort: 30001,
@@ -38,6 +39,11 @@ IHostBuilder builder = Host.CreateDefaultBuilder(args)
         {
             options.EnableIndirectProbes = true;
             options.UseLivenessGossip = true;
+        });
+        silo.UseDashboard(x =>
+        {
+            x.HostSelf = true;
+            x.Port = 9992;
         });
     })
     .UseConsoleLifetime();

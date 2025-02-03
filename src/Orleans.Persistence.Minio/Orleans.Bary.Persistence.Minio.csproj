@@ -1,14 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFramework>net8.0</TargetFramework>
+		<TargetFramework>net9.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.Orleans.Runtime" Version="8.2.0" />
-		<PackageReference Include="Minio" Version="6.0.3" />
+		<PackageReference Include="Microsoft.Orleans.Runtime" Version="9.0.1" />
+		<PackageReference Include="Minio" Version="6.0.4" />
+		<PackageReference Include="Orleans.Persistence.Minio.Core" Version="9.1.0" />
 	</ItemGroup>
+
 
 	<PropertyGroup>
 		<PackageId>Orleans.Bary.Persistence.Minio</PackageId>
@@ -16,7 +18,8 @@
 		<Title>Microsoft Orleans Persistence Service for Minio</Title>
 		<Description>Microsoft Orleans Persistence Service for Minio</Description>
 		<PackageProjectUrl>https://github.com/baryvn/Orleans.Minio</PackageProjectUrl>
-		<PackageIconUrl>https://raw.githubusercontent.com/baryvn/Orleans.Minio/main/bary-favicon-color.png</PackageIconUrl>
+		<PackageIconUrl>
+			https://raw.githubusercontent.com/baryvn/Orleans.Minio/main/bary-favicon-color.png</PackageIconUrl>
 		<PackageTags>Orleans Cloud-Computing Actor-Model Actors Distributed-Systems Minio C# .NET</PackageTags>
 		<PackageReleaseNotes></PackageReleaseNotes>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -24,7 +27,7 @@
 		<RepositoryType>git</RepositoryType>
 		<IncludeSymbols>true</IncludeSymbols>
 		<IncludeSource>true</IncludeSource>
-		<Version>8.2.0</Version>
+		<Version>9.1.1</Version>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 	</PropertyGroup>
 </Project>

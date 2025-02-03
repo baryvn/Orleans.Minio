@@ -6,13 +6,16 @@ using Orleans.Clustering.Minio;
 using Minio.DataModel.Args;
 using Minio;
 using System.Text;
+using Minio.ApiEndpoints;
+using Minio.Exceptions;
+using System.Net;
 
 namespace Orleans.Runtime.Membership
 {
 
     public class MinioBasedMembershipTable : IMembershipTable
     {
-        private readonly ILogger logger;
+        private readonly ILogger _logger;
         private readonly string ClusterId;
         private static readonly TableVersion DefaultTableVersion = new TableVersion(0, "0");
 
@@ -21,10 +24,9 @@ namespace Orleans.Runtime.Membership
         public MinioBasedMembershipTable(
             IMinioClient minioClient,
             ILogger<MinioBasedMembershipTable> logger,
-            IOptions<MinioClusteringSiloOptions> membershipTableOptions,
             IOptions<ClusterOptions> clusterOptions)
         {
-            this.logger = logger;
+            _logger = logger;
             ClusterId = clusterOptions.Value.ClusterId.ToLower().Replace("_", "-");
             _minioClient = minioClient;
         }
@@ -47,15 +49,95 @@ namespace Orleans.Runtime.Membership
                         var mbArgs = new MakeBucketArgs().WithBucket(ClusterId);
                         await _minioClient.MakeBucketAsync(mbArgs).ConfigureAwait(false);
                     }
+                    else
+                    {
+                        // List all objects in the bucket
+                        var objects = new List<string>();
+                        var listArgs = new ListObjectsArgs()
+                                          .WithBucket(ClusterId)
+                                          .WithRecursive(true);
+
+                        // Collect object names
+                        await foreach (var obj in _minioClient.ListObjectsEnumAsync(listArgs))
+                        {
+                            objects.Add(obj.Key);
+                        }
+
+                        // Delete each object
+                        foreach (var objName in objects)
+                        {
+                            var removeArgs = new RemoveObjectArgs()
+                                                .WithBucket(ClusterId)
+                                                .WithObject(objName);
+                            await _minioClient.RemoveObjectAsync(removeArgs);
+                            Console.WriteLine($"Deleted: {objName}");
+                        }
+
+                        Console.WriteLine($"All objects in bucket '{ClusterId}' have been deleted.");
+                    }
                     IsInitialized = true;
 
                 }
+
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, ex.Message);
+                    var notfound = ex as ObjectNotFoundException;
+                    if (notfound == null)
+                    {
+                        _logger.LogError(ex, ex.Message);
+                    }
                 }
             }
             await Task.CompletedTask;
+        }
+
+        private async Task<TableVersion> GetTableVersion()
+        {
+
+            TableVersion tableVersion = DefaultTableVersion;
+            try
+            {
+                var args = new GetObjectArgs().WithBucket(ClusterId).WithObject($"tablevertion_{ClusterId}").WithCallbackStream(async (stream) =>
+                {
+                    var table = await stream.ToObject<TableVersionData>();
+                    if (table != null) tableVersion = new TableVersion(table.Version, table.VersionEtag);
+                });
+                await _minioClient.GetObjectAsync(args);
+            }
+
+            catch (Exception ex)
+            {
+                var notfound = ex as ObjectNotFoundException;
+                if (notfound == null)
+                {
+                    _logger.LogError(ex, ex.Message);
+                }
+            }
+            return tableVersion;
+        }
+
+
+        private async Task<MembershipEntry?> GetMembershipEntry(string siloAddress)
+        {
+            MembershipEntry? entry = null;
+            try
+            {
+                var args = new GetObjectArgs().WithBucket(ClusterId).WithObject(siloAddress).WithCallbackStream(async (stream) =>
+                {
+                    entry = await stream.ToObject<MembershipEntry>();
+                });
+                await _minioClient.GetObjectAsync(args);
+            }
+
+            catch (Exception ex)
+            {
+                var notfound = ex as ObjectNotFoundException;
+                if (notfound == null)
+                {
+                    _logger.LogError(ex, ex.Message);
+                }
+            }
+            return entry;
         }
 
         /// <summary>
@@ -68,39 +150,33 @@ namespace Orleans.Runtime.Membership
         /// TableVersion, read atomically.</returns>
         public async Task<MembershipTableData> ReadRow(SiloAddress siloAddress)
         {
+            TableVersion tableVersion = await GetTableVersion();
             try
             {
-                TableVersion tableVersion = DefaultTableVersion;
                 MembershipTableData memberTable = new MembershipTableData(tableVersion);
-                await _minioClient.GetObjectAsync(
-                    new GetObjectArgs().WithBucket(ClusterId).WithObject($"tablevertion_{ClusterId}").WithCallbackStream(async (stream) =>
+                var entry = await GetMembershipEntry($"membership_{siloAddress.ToString()}");
+                if (entry != null)
+                {
+                    var tup = Tuple.Create(entry, tableVersion.VersionEtag);
+                    if (tup != null)
                     {
-                        var table = await stream.ToObject<TableVersionData>();
-                        if (table != null) tableVersion = new TableVersion(table.Version,table.VersionEtag);
-                    })
-                );
-                await _minioClient.GetObjectAsync(
-                    new GetObjectArgs().WithBucket(ClusterId).WithObject(siloAddress.ToString()).WithCallbackStream(async (stream) =>
-                    {
-                        var member = await stream.ToObject<MembershipEntry>();
-                        if (member != null)
-                        {
-                            var tup = Tuple.Create(member, tableVersion.VersionEtag);
-                            if (tup != null)
-                            {
-                                memberTable = new MembershipTableData(tup, tableVersion);
-                            }
-                        }
-                    })
-                );
+                        memberTable = new MembershipTableData(tup, tableVersion);
+                    }
+                }
                 return memberTable;
             }
+
             catch (Exception ex)
             {
-                logger.LogError(ex, ex.Message);
+                var notfound = ex as ObjectNotFoundException;
+                if (notfound == null)
+                {
+                    _logger.LogError(ex, ex.Message);
+                }
             }
-            return new MembershipTableData(DefaultTableVersion);
+            return new MembershipTableData(tableVersion);
         }
+
 
         /// <summary>
         /// Atomically reads the full content of the Membership Table.
@@ -113,45 +189,27 @@ namespace Orleans.Runtime.Membership
         {
             try
             {
-                TableVersion tableVersion = DefaultTableVersion;
-                await _minioClient.GetObjectAsync(
-                    new GetObjectArgs().WithBucket(ClusterId).WithObject($"tablevertion_{ClusterId}").WithCallbackStream(async (stream) =>
-                    {
-                        var table = await stream.ToObject<TableVersionData>();
-                        if (table != null) tableVersion = new TableVersion(table.Version, table.VersionEtag);
-                    })
-                );
-
+                TableVersion tableVersion = await GetTableVersion();
                 List<Tuple<MembershipEntry, string>> members = new List<Tuple<MembershipEntry, string>>();
-
-                // Make a bucket on the server, if not already present.
-                var beArgs = new BucketExistsArgs().WithBucket(ClusterId);
-                bool found = await _minioClient.BucketExistsAsync(beArgs).ConfigureAwait(false);
-                if (found)
+                var listArgs = new ListObjectsArgs().WithBucket(ClusterId).WithPrefix("membership_").WithRecursive(false);
+                await foreach (var item in _minioClient.ListObjectsEnumAsync(listArgs).ConfigureAwait(false))
                 {
-                    var listArgs = new ListObjectsArgs().WithBucket(ClusterId).WithPrefix("membership_").WithRecursive(false);
-                    await foreach (var item in _minioClient.ListObjectsEnumAsync(listArgs).ConfigureAwait(false))
+                    var member = await GetMembershipEntry(item.Key);
+                    if (member != null)
                     {
-                        await _minioClient.GetObjectAsync(
-                                new GetObjectArgs()
-                                    .WithBucket(ClusterId)
-                                    .WithObject(item.Key)
-                                    .WithCallbackStream(async (stream) =>
-                                    {
-                                        var member = await stream.ToObject<MembershipEntry>();
-                                        if (member != null)
-                                        {
-                                            members.Add(Tuple.Create(member, tableVersion.VersionEtag));
-                                        }
-                                    })
-                            );
+                        members.Add(Tuple.Create(member, tableVersion.VersionEtag));
                     }
                 }
                 return new MembershipTableData(members, tableVersion);
             }
+
             catch (Exception ex)
             {
-                logger.LogError(ex, ex.Message);
+                var notfound = ex as ObjectNotFoundException;
+                if (notfound == null)
+                {
+                    _logger.LogError(ex, ex.Message);
+                }
             }
             return new MembershipTableData(DefaultTableVersion);
         }
@@ -174,6 +232,7 @@ namespace Orleans.Runtime.Membership
         /// <returns>True if the insert operation succeeded and false otherwise.</returns>
         public async Task<bool> InsertRow(MembershipEntry entry, TableVersion tableVersion)
         {
+
             return await InsertOrUpdateMember(entry, new TableVersionData
             {
                 VersionEtag = tableVersion.VersionEtag,
@@ -218,20 +277,24 @@ namespace Orleans.Runtime.Membership
                         .WithBucket(ClusterId).WithObject($"tablevertion_{ClusterId}")
                         .WithStreamData(tbfilestream).WithObjectSize(tbfilestream.Length)
                         .WithContentType("application/octet-stream");
-                    _ = await _minioClient.PutObjectAsync(tbargs).ConfigureAwait(false);
+                    _ = await _minioClient.PutObjectAsync(tbargs);
                 }
                 var bs = Encoding.UTF8.GetBytes(entry.ToJson());
                 var filestream = new MemoryStream(bs);
                 var args = new PutObjectArgs()
-                    .WithBucket(ClusterId).WithObject($"membership_{entry.SiloAddress.ToString()}")
+                    .WithBucket(ClusterId).WithObject($"membership_{entry.SiloAddress}")
                     .WithStreamData(filestream).WithObjectSize(filestream.Length)
                     .WithContentType("application/octet-stream");
-                _ = await _minioClient.PutObjectAsync(args).ConfigureAwait(false);
-                return true;
+                var rs = await _minioClient.PutObjectAsync(args);
+                return rs.ResponseStatusCode == HttpStatusCode.OK;
             }
             catch (Exception ex)
             {
-                logger.Log(LogLevel.Error, ex, ex.Message);
+                var notfound = ex as ObjectNotFoundException;
+                if (notfound == null)
+                {
+                    _logger.LogError(ex, ex.Message);
+                }
             }
             return false;
         }
@@ -256,34 +319,26 @@ namespace Orleans.Runtime.Membership
         {
             try
             {
-                TableVersion tableVersion = DefaultTableVersion;
-                MembershipTableData memberTable = new MembershipTableData(tableVersion);
-                await _minioClient.GetObjectAsync(
-                    new GetObjectArgs().WithBucket(ClusterId).WithObject($"tablevertion_{ClusterId}").WithCallbackStream(async (stream) =>
+
+                TableVersion tableVersion = await GetTableVersion();
+                var member = await GetMembershipEntry($"membership_{entry.SiloAddress.ToString()}");
+                if (member != null)
+                {
+                    member.IAmAliveTime = entry.IAmAliveTime;
+                    await InsertOrUpdateMember(member, new TableVersionData
                     {
-                        var table = await stream.ToObject<TableVersionData>();
-                        if (table != null) tableVersion = new TableVersion(table.Version, table.VersionEtag);
-                    })
-                );
-                await _minioClient.GetObjectAsync(
-                    new GetObjectArgs().WithBucket(ClusterId).WithObject($"membership_{entry.SiloAddress.ToString()}").WithCallbackStream(async (stream) =>
-                    {
-                        var member = await stream.ToObject<MembershipEntry>();
-                        if (member != null)
-                        {
-                            member.IAmAliveTime = entry.IAmAliveTime;
-                            await InsertOrUpdateMember(member, new TableVersionData
-                            {
-                                VersionEtag = tableVersion.VersionEtag,
-                                Version = tableVersion.Version,
-                            }, updateTableVersion: false);
-                        }
-                    })
-                );
+                        VersionEtag = tableVersion.VersionEtag,
+                        Version = tableVersion.Version,
+                    }, updateTableVersion: false);
+                }
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, ex.Message);
+                var notfound = ex as ObjectNotFoundException;
+                if (notfound == null)
+                {
+                    _logger.LogError(ex, ex.Message);
+                }
             }
         }
 
@@ -292,56 +347,50 @@ namespace Orleans.Runtime.Membership
         /// </summary>
         public async Task DeleteMembershipTableEntries(string clusterId)
         {
-            // Make a bucket on the server, if not already present.
-            var beArgs = new BucketExistsArgs().WithBucket(ClusterId);
-            bool found = await _minioClient.BucketExistsAsync(beArgs).ConfigureAwait(false);
-            if (found)
+            try
             {
                 var listArgs = new ListObjectsArgs().WithBucket(ClusterId).WithPrefix("membership_").WithRecursive(false);
                 await foreach (var item in _minioClient.ListObjectsEnumAsync(listArgs).ConfigureAwait(false))
                 {
-                    await _minioClient.GetObjectAsync(
-                            new GetObjectArgs()
-                                .WithBucket(ClusterId)
-                                .WithObject(item.Key)
-                                .WithCallbackStream(async (stream) =>
-                                {
-                                    var member = await stream.ToObject<MembershipEntry>();
-                                    if (member != null)
-                                    {
-                                        var args = new RemoveObjectArgs().WithBucket(ClusterId).WithObject(item.Key);
-                                        await _minioClient.RemoveObjectAsync(args).ConfigureAwait(false);
-                                    }
-                                })
-                        );
+                    var member = await GetMembershipEntry(item.Key);
+                    if (member != null)
+                    {
+                        var args = new RemoveObjectArgs().WithBucket(ClusterId).WithObject(item.Key);
+                        await _minioClient.RemoveObjectAsync(args).ConfigureAwait(false);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                var notfound = ex as ObjectNotFoundException;
+                if (notfound == null)
+                {
+                    _logger.LogError(ex, ex.Message);
                 }
             }
         }
 
         public async Task CleanupDefunctSiloEntries(DateTimeOffset beforeDate)
         {
-            // Make a bucket on the server, if not already present.
-            var beArgs = new BucketExistsArgs().WithBucket(ClusterId);
-            bool found = await _minioClient.BucketExistsAsync(beArgs).ConfigureAwait(false);
-            if (found)
+            try
             {
                 var listArgs = new ListObjectsArgs().WithBucket(ClusterId).WithPrefix("membership_").WithRecursive(false);
                 await foreach (var item in _minioClient.ListObjectsEnumAsync(listArgs).ConfigureAwait(false))
                 {
-                    await _minioClient.GetObjectAsync(
-                            new GetObjectArgs()
-                                .WithBucket(ClusterId)
-                                .WithObject(item.Key)
-                                .WithCallbackStream(async (stream) =>
-                                {
-                                    var member = await stream.ToObject<MembershipEntry>();
-                                    if (member != null && member.Status == SiloStatus.Dead && member.IAmAliveTime < beforeDate)
-                                    {
-                                        var args = new RemoveObjectArgs().WithBucket(ClusterId).WithObject(item.Key);
-                                        await _minioClient.RemoveObjectAsync(args).ConfigureAwait(false);
-                                    }
-                                })
-                        );
+                    var member = await GetMembershipEntry(item.Key);
+                    if (member != null && member.Status == SiloStatus.Dead && member.IAmAliveTime < beforeDate)
+                    {
+                        var args = new RemoveObjectArgs().WithBucket(ClusterId).WithObject(item.Key);
+                        await _minioClient.RemoveObjectAsync(args).ConfigureAwait(false);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                var notfound = ex as ObjectNotFoundException;
+                if (notfound == null)
+                {
+                    _logger.LogError(ex, ex.Message);
                 }
             }
         }
